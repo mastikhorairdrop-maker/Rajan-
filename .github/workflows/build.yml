@@ -17,53 +17,40 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Modern Android APK
+      - name: Build with Gradle 9.8.1
         run: |
-          # पुरानी सभी फाइलों को पूरी तरह साफ़ करें
           rm -rf app build .gradle gradle gradlew gradlew.bat *.zip
 
-          # एंड्रॉइड प्रोजेक्ट फोल्डर ढांचा बनाएं
           mkdir -p app/src/main/java/com/myra/ai
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/layout
 
-          # 1. gradle.properties
           printf 'android.useAndroidX=true\nandroid.enableJetifier=true\n' > gradle.properties
 
-          # 2. settings.gradle
-          printf 'pluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\nrootProject.name = "MYRA AI"\ninclude ":app"\n' > settings.gradle
+          printf 'rootProject.name = "MYRA AI"\ninclude ":app"\n' > settings.gradle
 
-          # 3. root build.gradle
-          printf 'plugins {\n    id "com.android.application" version "8.1.0" apply false\n    id "org.jetbrains.kotlin.android" version "1.8.10" apply false\n}\n' > build.gradle
+          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.2.0"\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > build.gradle
 
-          # 4. app/build.gradle
-          printf 'plugins {\n    id "com.android.application"\n    id "org.jetbrains.kotlin.android"\n}\nandroid {\n    namespace "com.myra.ai"\n    compileSdk 33\n    defaultConfig {\n        applicationId "com.myra.ai"\n        minSdk 24\n        targetSdk 33\n        versionCode 1\n        versionName "1.0"\n    }\n}\ndependencies {\n    implementation "androidx.core:core-ktx:1.9.0"\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "com.google.android.material:material:1.8.0"\n}\n' > app/build.gradle
+          printf 'apply plugin: "com.android.application"\n\nandroid {\n    namespace "com.myra.ai"\n    compileSdk 34\n    defaultConfig {\n        applicationId "com.myra.ai"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n}\n\ndependencies {\n    implementation "androidx.core:core-ktx:1.12.0"\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "com.google.android.material:material:1.11.0"\n}\n' > app/build.gradle
 
-          # 5. AndroidManifest.xml
-          printf '<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    package="com.myra.ai">\n    <application\n        android:allowBackup="true"\n        android:label="MYRA AI"\n        android:theme="@style/Theme.AppCompat.Light.NoActionBar">\n        <activity\n            android:name=".MainActivity"\n            android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
+          printf '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.myra.ai">\n    <application android:label="MYRA AI" android:theme="@style/Theme.AppCompat.Light.NoActionBar">\n        <activity android:name=".MainActivity" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
 
-          # 6. strings.xml
           printf '<resources>\n    <string name="app_name">MYRA AI</string>\n</resources>\n' > app/src/main/res/values/strings.xml
 
-          # 7. MainActivity.kt
-          printf 'package com.myra.ai\n\nimport android.os.Bundle\nimport androidx.appcompat.app.AppCompatActivity\n\nclass MainActivity : AppCompatActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContentView(R.layout.activity_main)\n    }\n}\n' > app/src/main/java/com/myra/ai/MainActivity.kt
+          printf 'package com.myra.ai;\nimport android.os.Bundle;\nimport androidx.appcompat.app.AppCompatActivity;\npublic class MainActivity extends AppCompatActivity {\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n    }\n}\n' > app/src/main/java/com/myra/ai/MainActivity.java
 
-          # 8. activity_main.xml
-          printf '<?xml version="1.0" encoding="utf-8"?>\n<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"\n    android:layout_width="match_parent"\n    android:layout_height="match_parent"\n    android:gravity="center"\n    android:orientation="vertical"\n    android:background="#121212">\n    <TextView\n        android:layout_width="wrap_content"\n        android:layout_height="wrap_content"\n        android:text="MYRA AI Ready"\n        android:textColor="#FFFFFF"\n        android:textSize="24sp"\n        android:textStyle="bold"/>\n</LinearLayout>\n' > app/src/main/res/layout/activity_main.xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"\n    android:layout_width="match_parent" android:layout_height="match_parent"\n    android:gravity="center" android:orientation="vertical" android:background="#121212">\n    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"\n        android:text="MYRA AI Ready" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold"/>\n</LinearLayout>\n' > app/src/main/res/layout/activity_main.xml
 
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-          # Gradle Wrapper Setup (सबसे महत्वपूर्ण सुधार)
-          gradle wrapper --gradle-version 8.0
+          # गिटहब क्लाउड के अपने 9.8.1 वर्जन का उपयोग करें
+          gradle wrapper --gradle-version 9.8.1
           chmod +x gradlew
-
-          # Gradle Build Execution
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: myra-debug-apk
-          path: |
-            app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/*.apk
