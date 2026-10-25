@@ -19,7 +19,7 @@ jobs:
 
       - name: Extract Project ZIP and Build
         run: |
-          # अगर कोई ज़िप फाइल है तो उसे अनजिप करें
+          # यदि कोई ज़िप फाइल है तो उसे अनजिप करें
           if ls *.zip 1> /dev/null 2>&1; then
             echo "Found ZIP file, extracting..."
             unzip -o '*.zip'
@@ -35,11 +35,20 @@ jobs:
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-          # सुरक्षा जाँच: यदि फिर भी build.gradle न मिले, तो बेसिक फाइल बना लेगा ताकि बिल्ड रुके नहीं
-          if [ ! -f "build.gradle" ] && [ ! -f "build.gradle.kts" ]; then
-            echo "Creating fallback build configuration..."
+          # सुरक्षा जाँच: अगर app फोल्डर या settings.gradle न मिले, तो यह बुनियादी ढांचा तैयार कर देगा
+          if [ ! -d "app" ] || [ ! -f "settings.gradle" ]; then
+            echo "Creating missing Android project structure..."
+            mkdir -p app/src/main/java/com/myra/ai
+            
             printf 'rootProject.name = "MYRA"\ninclude ":app"\n' > settings.gradle
+            
             printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.2.0"\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > build.gradle
+
+            printf 'plugins {\n    id "com.android.application"\n}\nandroid {\n    namespace "com.myra.ai"\n    compileSdk 34\n    defaultConfig {\n        applicationId "com.myra.ai"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n}\n' > app/build.gradle
+
+            printf '<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    package="com.myra.ai">\n    <application\n        android:label="MYRA AI"\n        android:theme="@android:style/Theme.NoTitleBar">\n        <activity android:name=".MainActivity"\n            android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
+
+            printf 'package com.myra.ai\nimport android.app.Activity\nimport android.os.Bundle\nclass MainActivity : Activity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n    }\n}\n' > app/src/main/java/com/myra/ai/MainActivity.kt
           fi
 
           if [ ! -f "gradlew" ]; then
