@@ -1,4 +1,4 @@
-name: Build MYRA APK from ZIP
+name: Build Combined MYRA APK
 
 on:
   push:
@@ -17,38 +17,49 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Extract Project ZIP and Build
+      - name: Merge Stages and Build APK
         run: |
-          # यदि कोई ज़िप फाइल है तो उसे अनजिप करें
-          if ls *.zip 1> /dev/null 2>&1; then
-            echo "Found ZIP file, extracting..."
-            unzip -o '*.zip'
+          # अस्थायी फोल्डर बनाएँ जहाँ तीनों स्टेज को इकट्ठा किया जा सके
+          mkdir -p merged_project/app/src/main/java/com/myra/ai
+          mkdir -p merged_project/app/src/main/res
+
+          # सभी ज़िप फाइलों को अलग-अलग डायरेक्टरी में अनजिप करें
+          for z in *.zip; do
+            if [ -f "$z" ]; then
+              echo "Extracting $z..."
+              mkdir -p "extracted_$z"
+              unzip -o "$z" -d "extracted_$z"
+            fi
+          done
+
+          # सभी एक्सट्रैक्टेड फोल्डर से कोड और फाइलों को मुख्य प्रोजेक्ट में मर्ज करें
+          cp -r extracted_*/* . 2>/dev/null || true
+
+          # यदि अलग-अलग स्टेज में app फोल्डर या जावा फाइलें हैं, उन्हें सही जगह समेटें
+          if [ -d "app" ]; then
+            echo "Found main app directory."
+          else
+            mkdir -p app/src/main/java/com/myra/ai
           fi
 
-          # यदि ज़िप के अंदर कोई मुख्य फोल्डर बन गया हो तो फाइलों को बाहर रूट पर लाएं
-          if [ -d "MYRA" ]; then
-            cp -r MYRA/* .
-          elif [ -d "myra-ai-main" ]; then
-            cp -r myra-ai-main/* .
-          fi
-
+          # यदि रूट पर build.gradle या settings.gradle न हो, तो उन्हें व्यवस्थित करें
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-          # सुरक्षा जाँच: अगर app फोल्डर या settings.gradle न मिले, तो यह बुनियादी ढांचा तैयार कर देगा
-          if [ ! -d "app" ] || [ ! -f "settings.gradle" ]; then
-            echo "Creating missing Android project structure..."
-            mkdir -p app/src/main/java/com/myra/ai
-            
+          if [ ! -f "settings.gradle" ]; then
             printf 'rootProject.name = "MYRA"\ninclude ":app"\n' > settings.gradle
-            
+          fi
+
+          if [ ! -f "build.gradle" ]; then
             printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.2.0"\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > build.gradle
+          fi
 
+          if [ ! -f "app/build.gradle" ]; then
             printf 'plugins {\n    id "com.android.application"\n}\nandroid {\n    namespace "com.myra.ai"\n    compileSdk 34\n    defaultConfig {\n        applicationId "com.myra.ai"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n}\n' > app/build.gradle
+          fi
 
+          if [ ! -f "app/src/main/AndroidManifest.xml" ]; then
             printf '<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    package="com.myra.ai">\n    <application\n        android:label="MYRA AI"\n        android:theme="@android:style/Theme.NoTitleBar">\n        <activity android:name=".MainActivity"\n            android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
-
-            printf 'package com.myra.ai\nimport android.app.Activity\nimport android.os.Bundle\nclass MainActivity : Activity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n    }\n}\n' > app/src/main/java/com/myra/ai/MainActivity.kt
           fi
 
           if [ ! -f "gradlew" ]; then
