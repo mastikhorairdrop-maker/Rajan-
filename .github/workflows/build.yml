@@ -29,9 +29,9 @@ jobs:
 
           printf 'rootProject.name = "MYRA AI"\ninclude ":app"\n' > settings.gradle
 
-          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:7.4.2"\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > build.gradle
+          printf 'plugins {\n    id "com.android.application" version "7.4.2" apply false\n    id "org.jetbrains.kotlin.android" version "1.8.10" apply false\n}\n' > build.gradle
 
-          printf 'apply plugin: "com.android.application"\n\nandroid {\n    namespace "com.myra.ai"\n    compileSdk 33\n    defaultConfig {\n        applicationId "com.myra.ai"\n        minSdk 24\n        targetSdk 33\n        versionCode 1\n        versionName "1.0"\n    }\n}\n\ndependencies {\n    implementation "androidx.core:core-ktx:1.9.0"\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "com.google.android.material:material:1.8.0"\n}\n' > app/build.gradle
+          printf 'plugins {\n    id "com.android.application"\n    id "org.jetbrains.kotlin.android"\n}\n\nandroid {\n    namespace "com.myra.ai"\n    compileSdk 33\n    defaultConfig {\n        applicationId "com.myra.ai"\n        minSdk 24\n        targetSdk 33\n        versionCode 1\n        versionName "1.0"\n    }\n}\n\ndependencies {\n    implementation "androidx.core:core-ktx:1.9.0"\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "com.google.android.material:material:1.8.0"\n}\n' > app/build.gradle
 
           printf '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.myra.ai">\n    <application android:label="MYRA AI" android:theme="@style/Theme.AppCompat.Light.NoActionBar">\n        <activity android:name=".MainActivity" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n' > app/src/main/AndroidManifest.xml
 
@@ -44,8 +44,9 @@ jobs:
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-          # बिना किसी नए वर्जन के चक्कर में पड़े सीधा स्टेबल बिल्ड कमांड चलाएं
-          gradle assembleDebug --no-daemon
+          gradle wrapper --gradle-version 7.5
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
