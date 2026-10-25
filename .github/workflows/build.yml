@@ -1,0 +1,45 @@
+name: Build MYRA APK from ZIP
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Extract Project ZIP and Build
+        run: |
+          # अगर आपकी रिपॉजिटरी में कोई भी .zip फाइल होगी, तो यह उसे ऑटोमैटिक अनजिप कर देगा
+          if ls *.zip 1> /dev/null 2>&1; then
+            echo "Found ZIP file, extracting..."
+            unzip -o '*.zip'
+          fi
+
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+          if [ ! -f "gradlew" ]; then
+            gradle wrapper --gradle-version 8.7
+          fi
+
+          chmod +x gradlew || true
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: myra-debug-apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            build/outputs/apk/debug/*.apk
+            **/build/outputs/apk/debug/*.apk
