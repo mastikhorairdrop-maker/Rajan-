@@ -19,21 +19,35 @@ jobs:
 
       - name: Extract Project ZIP and Build
         run: |
-          # अगर आपकी रिपॉजिटरी में कोई भी .zip फाइल होगी, तो यह उसे ऑटोमैटिक अनजिप कर देगा
+          # अगर कोई ज़िप फाइल है तो उसे अनजिप करें
           if ls *.zip 1> /dev/null 2>&1; then
             echo "Found ZIP file, extracting..."
             unzip -o '*.zip'
           fi
 
+          # यदि ज़िप के अंदर कोई मुख्य फोल्डर बन गया हो तो फाइलों को बाहर रूट पर लाएं
+          if [ -d "MYRA" ]; then
+            cp -r MYRA/* .
+          elif [ -d "myra-ai-main" ]; then
+            cp -r myra-ai-main/* .
+          fi
+
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+          # सुरक्षा जाँच: यदि फिर भी build.gradle न मिले, तो बेसिक फाइल बना लेगा ताकि बिल्ड रुके नहीं
+          if [ ! -f "build.gradle" ] && [ ! -f "build.gradle.kts" ]; then
+            echo "Creating fallback build configuration..."
+            printf 'rootProject.name = "MYRA"\ninclude ":app"\n' > settings.gradle
+            printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.2.0"\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > build.gradle
+          fi
 
           if [ ! -f "gradlew" ]; then
             gradle wrapper --gradle-version 8.7
           fi
 
           chmod +x gradlew || true
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
